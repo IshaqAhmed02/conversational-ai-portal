@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mic, Upload, FileText, Globe, Play, Save } from "lucide-react";
+import { ArrowLeft, Mic, Upload, FileText, Globe, Play, Save, Copy, Check, Code2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +18,13 @@ const CreateAgent = () => {
   const [language, setLanguage] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [exitMessage, setExitMessage] = useState("");
+  const [iconPosition, setIconPosition] = useState("bottom-right");
+  const [iconSize, setIconSize] = useState("medium");
+  const [iconColor, setIconColor] = useState("primary");
+  const [copied, setCopied] = useState(false);
+  
+  // Generate unique agent ID
+  const agentId = useMemo(() => crypto.randomUUID(), []);
 
   const handleSave = () => {
     if (!agentName || !voice || !language) {
@@ -35,6 +42,44 @@ const CreateAgent = () => {
     });
     
     navigate("/dashboard");
+  };
+
+  const generateEmbedCode = () => {
+    const sizeMap = {
+      small: "60",
+      medium: "70",
+      large: "80"
+    };
+    
+    const positionStyles = {
+      "bottom-right": "bottom: 20px; right: 20px;",
+      "bottom-left": "bottom: 20px; left: 20px;",
+      "top-right": "top: 20px; right: 20px;",
+      "top-left": "top: 20px; left: 20px;"
+    };
+
+    return `<!-- AI VoiceUp Widget -->
+<div id="ai-voiceup-widget-${agentId}" style="position: fixed; ${positionStyles[iconPosition as keyof typeof positionStyles]} z-index: 9999;">
+  <iframe 
+    src="${window.location.origin}/widget/${agentId}"
+    width="${sizeMap[iconSize as keyof typeof sizeMap]}"
+    height="${sizeMap[iconSize as keyof typeof sizeMap]}"
+    frameborder="0"
+    allow="microphone"
+    style="border: none; border-radius: 50%;">
+  </iframe>
+</div>
+<!-- End AI VoiceUp Widget -->`;
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(generateEmbedCode());
+    setCopied(true);
+    toast({
+      title: "Code Copied!",
+      description: "Embed code has been copied to clipboard",
+    });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -227,6 +272,125 @@ const CreateAgent = () => {
                 </p>
               </div>
               <Button variant="outline">Configure</Button>
+            </div>
+          </Card>
+
+          {/* Embed Code Generator */}
+          <Card className="p-6 bg-gradient-subtle border-accent/30">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-hero rounded-lg flex items-center justify-center">
+                <Code2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold">Embed Code Generator</h2>
+                <p className="text-sm text-muted-foreground">
+                  Agent ID: <code className="text-accent font-mono">{agentId}</code>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Customization Options */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="position">Icon Position</Label>
+                  <Select value={iconPosition} onValueChange={setIconPosition}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                      <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                      <SelectItem value="top-right">Top Right</SelectItem>
+                      <SelectItem value="top-left">Top Left</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="size">Icon Size</Label>
+                  <Select value={iconSize} onValueChange={setIconSize}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small (60px)</SelectItem>
+                      <SelectItem value="medium">Medium (70px)</SelectItem>
+                      <SelectItem value="large">Large (80px)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="color">Icon Theme</Label>
+                  <Select value={iconColor} onValueChange={setIconColor}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primary (Indigo)</SelectItem>
+                      <SelectItem value="accent">Accent (Cyan)</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="border border-border rounded-lg p-4 bg-background/50">
+                <Label className="text-sm font-medium mb-2 block">Preview</Label>
+                <div className="relative h-32 bg-muted/30 rounded-md overflow-hidden">
+                  <div 
+                    className={`absolute ${
+                      iconPosition === "bottom-right" ? "bottom-2 right-2" :
+                      iconPosition === "bottom-left" ? "bottom-2 left-2" :
+                      iconPosition === "top-right" ? "top-2 right-2" :
+                      "top-2 left-2"
+                    }`}
+                  >
+                    <div 
+                      className={`rounded-full bg-gradient-hero shadow-elegant flex items-center justify-center cursor-pointer hover:scale-110 transition-smooth ${
+                        iconSize === "small" ? "w-[60px] h-[60px]" :
+                        iconSize === "medium" ? "w-[70px] h-[70px]" :
+                        "w-[80px] h-[80px]"
+                      }`}
+                    >
+                      <Mic className="text-white" size={iconSize === "small" ? 24 : iconSize === "medium" ? 28 : 32} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Generated Code */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Embed Code</Label>
+                <div className="relative">
+                  <pre className="bg-muted/50 border border-border rounded-lg p-4 overflow-x-auto text-sm font-mono">
+                    <code>{generateEmbedCode()}</code>
+                  </pre>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="absolute top-2 right-2 gap-2"
+                    onClick={handleCopyCode}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Copy Code
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Copy and paste this code into your website's HTML, just before the closing &lt;/body&gt; tag
+                </p>
+              </div>
             </div>
           </Card>
         </div>
