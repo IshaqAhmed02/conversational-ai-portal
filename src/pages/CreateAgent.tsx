@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Mic, Upload, FileText, Globe, Play, Save, Copy, Check, Code2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreateAgent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [agentName, setAgentName] = useState("");
   const [voice, setVoice] = useState("");
   const [language, setLanguage] = useState("");
@@ -22,11 +24,9 @@ const CreateAgent = () => {
   const [iconSize, setIconSize] = useState("medium");
   const [iconColor, setIconColor] = useState("primary");
   const [copied, setCopied] = useState(false);
-  
-  // Generate unique agent ID
-  const agentId = useMemo(() => crypto.randomUUID(), []);
+  const [agentId, setAgentId] = useState<string | null>(null);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!agentName || !voice || !language) {
       toast({
         title: "Missing Information",
@@ -36,15 +36,53 @@ const CreateAgent = () => {
       return;
     }
 
-    toast({
-      title: "Agent Created!",
-      description: `${agentName} has been created successfully`,
-    });
-    
-    navigate("/dashboard");
+    setIsLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("You must be logged in to create an agent");
+      }
+
+      const { data, error } = await supabase
+        .from('agents')
+        .insert({
+          user_id: user.id,
+          name: agentName,
+          voice,
+          language,
+          welcome_message: welcomeMessage,
+          exit_message: exitMessage,
+          icon_position: iconPosition,
+          icon_size: iconSize,
+          icon_color: iconColor,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setAgentId(data.id);
+
+      toast({
+        title: "Agent Created!",
+        description: `${agentName} has been created successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const generateEmbedCode = () => {
+    if (!agentId) return "";
+    
     const sizeMap = {
       small: "60",
       medium: "70",
@@ -73,6 +111,15 @@ const CreateAgent = () => {
   };
 
   const handleCopyCode = () => {
+    if (!agentId) {
+      toast({
+        title: "Save Agent First",
+        description: "Please save your agent before copying the embed code",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     navigator.clipboard.writeText(generateEmbedCode());
     setCopied(true);
     toast({
