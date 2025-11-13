@@ -43,6 +43,20 @@ serve(async (req) => {
       );
     }
 
+    // Verify agent exists
+    const { data: agent, error: agentError } = await supabaseClient
+      .from('agents')
+      .select('id')
+      .eq('id', agentId)
+      .single();
+
+    if (agentError || !agent) {
+      return new Response(
+        JSON.stringify({ error: 'Agent not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const apiKey = Deno.env.get('LIVEKIT_API_KEY');
     const apiSecret = Deno.env.get('LIVEKIT_API_SECRET');
 
@@ -50,8 +64,31 @@ serve(async (req) => {
       throw new Error('LiveKit credentials not configured');
     }
 
-    const roomName = agentId;
+    // Create a unique session and room for this user + agent combination
+    const sessionId = crypto.randomUUID();
+    const roomName = `session-${sessionId}`;
     const participantName = user.email || user.phone || user.id;
+    const endUserId = user.id;
+
+    // Create session record in database
+    const { error: sessionError } = await supabaseClient
+      .from('sessions')
+      .insert({
+        id: sessionId,
+        agent_id: agentId,
+        room_name: roomName,
+        end_user_id: endUserId,
+        end_user_email: user.email || null,
+        end_user_phone: user.phone || null,
+        status: 'active',
+      });
+
+    if (sessionError) {
+      console.error('Session creation error:', sessionError);
+      throw new Error('Failed to create session');
+    }
+
+    console.log(`Created session ${sessionId} for agent ${agentId} in room ${roomName}`);
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: user.id,
@@ -68,7 +105,7 @@ serve(async (req) => {
     const token = await at.toJwt();
 
     return new Response(
-      JSON.stringify({ token, roomName }),
+      JSON.stringify({ token, roomName, sessionId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

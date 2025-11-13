@@ -96,12 +96,12 @@ const Index = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                size="lg" 
-                className="bg-gradient-hero hover:opacity-90 transition-smooth shadow-glow text-lg px-8"
-                onClick={() => navigate("/dashboard")}
-              >
-                Start Building
+            <Button 
+              size="lg" 
+              className="bg-gradient-hero hover:opacity-90 transition-smooth shadow-glow text-lg px-8"
+              onClick={() => navigate("/auth")}
+            >
+              Start Building
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8">
