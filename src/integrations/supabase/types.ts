@@ -14,7 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agents: {
+        Row: {
+          created_at: string
+          exit_message: string | null
+          icon_color: string | null
+          icon_position: string | null
+          icon_size: string | null
+          id: string
+          knowledge_base: Json | null
+          language: string
+          name: string
+          updated_at: string
+          user_id: string
+          voice: string
+          welcome_message: string | null
+        }
+        Insert: {
+          created_at?: string
+          exit_message?: string | null
+          icon_color?: string | null
+          icon_position?: string | null
+          icon_size?: string | null
+          id?: string
+          knowledge_base?: Json | null
+          language: string
+          name: string
+          updated_at?: string
+          user_id: string
+          voice: string
+          welcome_message?: string | null
+        }
+        Update: {
+          created_at?: string
+          exit_message?: string | null
+          icon_color?: string | null
+          icon_position?: string | null
+          icon_size?: string | null
+          id?: string
+          knowledge_base?: Json | null
+          language?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          voice?: string
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          agent_id: string
+          created_at: string
+          duration_seconds: number | null
+          end_user_email: string | null
+          end_user_id: string
+          end_user_phone: string | null
+          ended_at: string | null
+          id: string
+          room_name: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          end_user_email?: string | null
+          end_user_id: string
+          end_user_phone?: string | null
+          ended_at?: string | null
+          id?: string
+          room_name: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          end_user_email?: string | null
+          end_user_id?: string
+          end_user_phone?: string | null
+          ended_at?: string | null
+          id?: string
+          room_name?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
