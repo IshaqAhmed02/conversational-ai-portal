@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Mic, Upload, FileText, Globe, Play, Save, Copy, Check, Code2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
+import { VoiceChat } from "@/components/widget/VoiceChat";
 
 const CreateAgent = () => {
   const navigate = useNavigate();
@@ -25,6 +28,32 @@ const CreateAgent = () => {
   const [iconColor, setIconColor] = useState("primary");
   const [copied, setCopied] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(null);
+  const [isTestOpen, setIsTestOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleTestAgent = () => {
+    if (!agentId) {
+      toast({
+        title: "Save Agent First",
+        description: "Please save your agent before testing",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsTestOpen(true);
+  };
 
   const handleSave = async () => {
     if (!agentName || !voice || !language) {
@@ -146,11 +175,16 @@ const CreateAgent = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleTestAgent}
+              disabled={!agentId}
+            >
               <Play className="h-4 w-4" />
               Test Agent
             </Button>
-            <Button className="bg-gradient-hero hover:opacity-90 transition-smooth gap-2" onClick={handleSave}>
+            <Button className="bg-gradient-hero hover:opacity-90 transition-smooth gap-2" onClick={handleSave} disabled={isLoading}>
               <Save className="h-4 w-4" />
               Save Agent
             </Button>
@@ -442,6 +476,20 @@ const CreateAgent = () => {
           </Card>
         </div>
       </main>
+
+      {/* Test Agent Dialog */}
+      <Dialog open={isTestOpen} onOpenChange={setIsTestOpen}>
+        <DialogContent className="max-w-md h-[600px] p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle>Test Agent: {agentName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {agentId && session && (
+              <VoiceChat agentId={agentId} session={session} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

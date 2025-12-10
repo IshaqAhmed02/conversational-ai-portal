@@ -59,8 +59,9 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('LIVEKIT_API_KEY');
     const apiSecret = Deno.env.get('LIVEKIT_API_SECRET');
+    const livekitUrl = Deno.env.get('LIVEKIT_URL');
 
-    if (!apiKey || !apiSecret) {
+    if (!apiKey || !apiSecret || !livekitUrl) {
       throw new Error('LiveKit credentials not configured');
     }
 
@@ -105,7 +106,7 @@ serve(async (req) => {
     const token = await at.toJwt();
 
     return new Response(
-      JSON.stringify({ token, roomName, sessionId }),
+      JSON.stringify({ token, roomName, sessionId, livekitUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

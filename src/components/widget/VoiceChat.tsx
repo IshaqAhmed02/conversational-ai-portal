@@ -119,7 +119,7 @@ export const VoiceChat = ({ agentId, session }: VoiceChatProps) => {
       if (error) throw error;
 
       setToken(data.token);
-      setLivekitUrl(import.meta.env.VITE_LIVEKIT_URL || "");
+      setLivekitUrl(data.livekitUrl);
       setSessionId(data.sessionId);
       setRoomName(data.roomName);
       setIsConnected(true);
